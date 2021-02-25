@@ -107,7 +107,7 @@ export default class GraphQLClient {
 	}
 	static BuildObject(obj) {
 		let result = ``
-		if (!obj) return result
+		if (obj===null || obj===undefined) return result
 		if (typeof (obj) === "string" ||
 			typeof (obj) === "number" ||
 			Array.isArray(obj))
