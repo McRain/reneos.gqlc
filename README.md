@@ -3,34 +3,34 @@ GraphQL Client library : https://github.com/McRain/reneos.gqlc
 
 ## Install
 
-npm i @reneos/gqlc
+`npm i @reneos/gqlc`
 
 ## Usage Static
 
-import gqlc from "@reneos/gqlc"
+`import gqlc from "@reneos/gqlc"`
 
 ###### Init:
 
-const Api = gqlc.Init({
+`const Api = gqlc.Init({
 	"method": "post",
 	"credentials": "include",
 	"headers": {},
 	"url": "https://127.0.0.1/api"
-})
+})`
 
 ###### Query (runtime build query):
 
-const {error,user} = await gqlc.Get({
+`const {error,user} = await gqlc.Get({
 	user:[{
 		$args:{
 			id:"userId"
 		}
 	},"name","email"]
-})
+})`
 
 ###### Query (prebuild query):
 
-gqlc.Add({
+`gqlc.Add({
 	user_query:{
 		user:[{
 			$args:{
@@ -40,12 +40,12 @@ gqlc.Add({
 	}
 })
 
-const {error,user} = await gqlc.Get("user_query",{$userid:"UserId"})
+const {error,user} = await gqlc.Get("user_query",{$userid:"UserId"})`
 
 
 ###### Mutation:
    
-const {entrypoint,error} = await gqlc.Set({
+`const {entrypoint,error} = await gqlc.Set({
 				entrypoint: [
 					{
 						$args: {
@@ -55,28 +55,28 @@ const {entrypoint,error} = await gqlc.Set({
 					"result",
 					"code"
 				]
-			})
+			})`
 
 ## Usage instance
 
-import gqlc from "@reneos/gqlc"
+`import gqlc from "@reneos/gqlc"
 
 const client = new gqlc.Client({
 	"method": "post",
 	"credentials": "include",
 	"headers": {},
 	"url": "http://127.0.0.1/api"
-})
+})`
 
-const {error,user} = await client.read({
+`const {error,user} = await client.read({
 	user:[{
 		$args:{
 			id:"userId"
 		}
 	},"name","email"]
 })
-
-const {entrypoint,error} = await client.write({
+`
+`const {entrypoint,error} = await client.write({
 				entrypoint: [
 					{
 						$args: {
@@ -86,4 +86,4 @@ const {entrypoint,error} = await client.write({
 					"result",
 					"code"
 				]
-			})
+			})`
