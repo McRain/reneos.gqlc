@@ -16,25 +16,24 @@ class Client extends EventTarget {
 		this._options = options
 		this._stored = {}
 	}
-	add(obj){
+	add(obj) {
 		const keys = Object.keys(obj)
-		for(let i=0;i<keys.length;i++)
-		{
+		for (let i = 0; i < keys.length; i++) {
 			const k = keys[i]
-			this._stored[k] = obj[k] 
+			this._stored[k] = obj[k]
 		}
 	}
-	remove(keys){
-		for(let i=0;i<keys.length;i++){
+	remove(keys) {
+		for (let i = 0; i < keys.length; i++) {
 			delete this._stored[keys[i]]
 		}
 	}
 	parseTemplate(template, data) {
-		return data?JSON.parse(JSON.stringify(template, (k, v) => {
+		return data ? JSON.parse(JSON.stringify(template, (k, v) => {
 			if (v in data)
 				return data[v]
 			return v
-		})):template
+		})) : template
 	}
 	read(value, data) {
 		const t = typeof value === "string" ? this._stored[value] : value
@@ -97,37 +96,48 @@ class Client extends EventTarget {
 		})
 		return result
 	}
+	buildarg(arg) {
+		let str = ''
+		switch (typeof arg) {
+			case "object":
+				if (Array.isArray(arg)) {
+					const red = arg.reduce((acc, el) => {
+						return acc + this.buildarg(el) + ' ,'
+					}, '')
+					str += `[${red.slice(0, -1)}]`
+				} else {
+					const keys = Object.keys(arg)
+					str += ` { `
+					for (let i = 0; i < keys.length; i++) {
+						const k = keys[i]
+						str += `${k}:${this.buildarg(arg[k])},`
+					}
+					str += ` } `
+				}
+
+				break
+			case "string":
+				if (arg.startsWith('$'))
+					str += `${arg.slice(1)}`
+				else
+					str += ` "${arg}" `
+				break
+			case "number":
+				str += arg
+				break
+			default:
+				str += JSON.stringify(arg)
+				break
+		}
+		return str
+	}
 	buildargs(args) {
 		let result = " ( "
-		Object.keys(args).forEach((k) => {
-			result += k + ":"
-			const vals = args[k]
-			if (vals instanceof Array) {
-				if (vals.length === 0)
-					result += "[],"
-				else {
-					const v = vals[0]
-					if (typeof (v) === "string")
-						result += JSON.stringify(vals) + ","
-					else if (typeof (v) === "number")
-						result += "[" + vals.join(',') + "],"
-					else {
-						result += "["
-						vals.forEach((el) => {
-							result += "{"
-							Object.keys(el).forEach((kl) => {
-								result += kl + ":" + this.buildobject(el[kl]) + ","
-							})
-							result = result.slice(0, -1) + "},"
-						})
-						result = result.slice(0, -1) + "],"
-					}
-				}
-			} else if (typeof vals === "object") {
-				result += JSON.stringify(vals).replaceAll('"', '') + ","
-			} else
-				result += JSON.stringify(vals) + ","
-		})
+		const keys = Object.keys(args)
+		for (let i = 0; i < keys.length; i++) {
+			const k = keys[i]
+			result += `${k}:${this.buildarg(args[k])},`
+		}
 		return result.slice(0, -1) + " ) "
 	}
 	async send(data, url, method, credentials, headers) {
@@ -152,7 +162,7 @@ class Client extends EventTarget {
 
 export default class GraphQLClient {
 
-	static get Client(){
+	static get Client() {
 		return Client
 	}
 
@@ -288,37 +298,48 @@ export default class GraphQLClient {
 		return result
 	}
 
+	static BuildArg(arg) {
+		let str = ''
+		switch (typeof arg) {
+			case "object":
+				if (Array.isArray(arg)) {
+					const red = arg.reduce((acc, el) => {
+						return acc + GraphQLClient.BuildArg(el) + ' ,'
+					}, '')
+					str += `[${red.slice(0, -1)}]`
+				} else {
+					const keys = Object.keys(arg)
+					str += ` { `
+					for (let i = 0; i < keys.length; i++) {
+						const k = keys[i]
+						str += `${k}:${GraphQLClient.BuildArg(arg[k])},`
+					}
+					str += ` } `
+				}
+				break
+			case "string":
+				if (arg.startsWith('$'))
+					str += `${arg.slice(1)}`
+				else
+					str += ` "${arg}" `
+				break
+			case "number":
+				str += arg
+				break
+			default:
+				str += JSON.stringify(arg)
+				break
+		}
+		return str
+	}
+
 	static BuildArgs(args) {
 		let result = " ( "
-		Object.keys(args).forEach((k) => {
-			result += k + ":"
-			const vals = args[k]
-			if (vals instanceof Array) {
-				if (vals.length === 0)
-					result += "[],"
-				else {
-					const v = vals[0]
-					if (typeof (v) === "string")
-						result += JSON.stringify(vals) + ","
-					else if (typeof (v) === "number")
-						result += "[" + vals.join(',') + "],"
-					else {
-						result += "["
-						vals.forEach((el) => {
-							result += "{"
-							Object.keys(el).forEach((kl) => {
-								result += kl + ":" + GraphQLClient.BuildObject(el[kl]) + ","
-							})
-							result = result.slice(0, -1) + "},"
-						})
-						result = result.slice(0, -1) + "],"
-					}
-				}
-			} else if (typeof vals === "object") {
-				result += JSON.stringify(vals).replaceAll('"', '') + ","
-			} else
-				result += JSON.stringify(vals) + ","
-		})
+		const keys = Object.keys(args)
+		for (let i = 0; i < keys.length; i++) {
+			const k = keys[i]
+			result += `${k}:${GraphQLClient.BuildArg(args[k])},`
+		}
 		return result.slice(0, -1) + " ) "
 	}
 
