@@ -43,13 +43,13 @@ class Client extends EventTarget {
 		const t = typeof value === "string" ? this._stored[value] : value
 		return this.do('mutation', this.parseTemplate(t, data))
 	}
-	do(op, q) {
+	async do(op, q) {
 		const query = this.build(op, q)
 		try {
-			return this.send(JSON.stringify({ query }))
+			return await this.send(JSON.stringify({ query }))
 		} catch (error) {
 			if (!error.code)
-				return { error: { code: 400 } } //no serverside error
+				return { error: { code: 500 } } //no serverside error
 			return { error }
 		}
 	}
@@ -136,28 +136,33 @@ class Client extends EventTarget {
 		const keys = Object.keys(args)
 		for (let i = 0; i < keys.length; i++) {
 			const k = keys[i]
-			if(v!==null && v!==undefined){
+			const v = args[k]
+			if (v !== null && v !== undefined) {
 				result += `${k}:${this.buildarg(v)},`
-			}			
+			}
 		}
 		return result.slice(0, -1) + " ) "
 	}
 	async send(data, url, method, credentials, headers) {
 		let result = {}
-		const resp = await fetch(url || this._options.url, {
-			method: method || this._options.method,
-			headers: {
-				"Content-Type": "application/json",
-				"Accept": "application/json",
-				...this._options.headers,
-				...headers
-			},
-			body: data,
-			credentials: credentials || this._options.credentials
-		})
-		result = await resp.json()
+		try {
+			const resp = await fetch(url || this._options.url, {
+				method: method || this._options.method,
+				headers: {
+					"Content-Type": "application/json",
+					"Accept": "application/json",
+					...this._options.headers,
+					...headers
+				},
+				body: data,
+				credentials: credentials || this._options.credentials
+			})
+			result = await resp.json()
+		} catch (e) {
+			result.error=e
+		}
 		if (result.error)
-			throw new Error(result.error)
+			throw new GraphError(result.error.code || 500) 
 		return result.data
 	}
 }
@@ -341,7 +346,7 @@ export default class GraphQLClient {
 		for (let i = 0; i < keys.length; i++) {
 			const k = keys[i]
 			const v = args[k]
-			if(v!==null && v!==undefined){
+			if (v !== null && v !== undefined) {
 				result += `${k}:${GraphQLClient.BuildArg(v)},`
 			}
 		}
