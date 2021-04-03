@@ -120,7 +120,7 @@ class Client extends EventTarget {
 				if (arg.startsWith('$'))
 					str += `${arg.slice(1)}`
 				else
-					str += ` "${arg}" `
+					str += JSON.stringify(arg)
 				break
 			case "number":
 				str += arg
@@ -136,7 +136,9 @@ class Client extends EventTarget {
 		const keys = Object.keys(args)
 		for (let i = 0; i < keys.length; i++) {
 			const k = keys[i]
-			result += `${k}:${this.buildarg(args[k])},`
+			if(v!==null && v!==undefined){
+				result += `${k}:${this.buildarg(v)},`
+			}			
 		}
 		return result.slice(0, -1) + " ) "
 	}
@@ -321,7 +323,7 @@ export default class GraphQLClient {
 				if (arg.startsWith('$'))
 					str += `${arg.slice(1)}`
 				else
-					str += ` "${arg}" `
+					str += JSON.stringify(arg)
 				break
 			case "number":
 				str += arg
@@ -338,7 +340,10 @@ export default class GraphQLClient {
 		const keys = Object.keys(args)
 		for (let i = 0; i < keys.length; i++) {
 			const k = keys[i]
-			result += `${k}:${GraphQLClient.BuildArg(args[k])},`
+			const v = args[k]
+			if(v!==null && v!==undefined){
+				result += `${k}:${GraphQLClient.BuildArg(v)},`
+			}
 		}
 		return result.slice(0, -1) + " ) "
 	}
