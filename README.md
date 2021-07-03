@@ -5,7 +5,7 @@ https://github.com/McRain/reneos.gqlc
 
 ```npm i @reneos/gqlc```
 
-## Usage Static
+## Browser usage (static)
 
 ```import gqlc from "@reneos/gqlc"```
 
@@ -63,12 +63,12 @@ const {entrypoint,error} = await gqlc.Set({
 			})
 ```
 
-## Usage instance
+## Browser Usage (instance)
 
 ```js
-import gqlc from "@reneos/gqlc"
+import {Client} from "@reneos/gqlc"
 
-const client = new gqlc.Client({
+const client = new Client({
 	"method": "post",
 	"credentials": "include",
 	"headers": {},
@@ -96,3 +96,14 @@ const {entrypoint,error} = await client.write({
 			})
 ```
 
+## Node.js Usage (static)
+
+```import gqlc from "@reneos/gqlc"```
+
+###### After init:
+
+```js
+gql.Init({
+	"fetch": false,
+})
+```

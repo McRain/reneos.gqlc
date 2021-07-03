@@ -1,19 +1,30 @@
-/* eslint-disable */
+ /* eslint-disable */
 const _gqlcOpt = {
 	"method": "post",
 	"credentials": "include",
 	"headers": {},
-	"url": ""
+	"url": "",
+	"port": 80,
+	"poth": "/",
+	"fetch": true
 }
 
 const _stored = {}
 
 let _eventHandlers = {}
 
-class Client extends EventTarget {
+class Client {
 	constructor(options) {
-		super()
-		this._options = options
+		this._options = {
+			"method": "post",
+			"credentials": "include",
+			"headers": {},
+			"url": "",
+			"port": 80,
+			"poth": "/",
+			"fetch": true,
+			...options
+		}
 		this._stored = {}
 	}
 	add(obj) {
@@ -98,6 +109,8 @@ class Client extends EventTarget {
 	}
 	buildarg(arg) {
 		let str = ''
+		if (arg === null)
+			arg = undefined
 		switch (typeof arg) {
 			case "object":
 				if (Array.isArray(arg)) {
@@ -114,7 +127,6 @@ class Client extends EventTarget {
 					}
 					str += ` } `
 				}
-
 				break
 			case "string":
 				if (arg.startsWith('$'))
@@ -124,6 +136,9 @@ class Client extends EventTarget {
 				break
 			case "number":
 				str += arg
+				break
+			case "undefined":
+				str += 'null'
 				break
 			default:
 				str += JSON.stringify(arg)
@@ -137,33 +152,73 @@ class Client extends EventTarget {
 		for (let i = 0; i < keys.length; i++) {
 			const k = keys[i]
 			const v = args[k]
-			if (v !== null && v !== undefined) {
-				result += `${k}:${this.buildarg(v)},`
-			}
+			result += `${k}:${this.buildarg(v)},`
 		}
 		return result.slice(0, -1) + " ) "
 	}
 	async send(data, url, method, credentials, headers) {
-		let result = {}
-		try {
-			const resp = await fetch(url || this._options.url, {
-				method: method || this._options.method,
-				headers: {
-					"Content-Type": "application/json",
-					"Accept": "application/json",
-					...this._options.headers,
-					...headers
-				},
-				body: data,
-				credentials: credentials || this._options.credentials
-			})
-			result = await resp.json()
-		} catch (e) {
-			result.error=e
+		if (this._options.fetch) {
+			let result = {}
+			try {
+				const resp = await fetch(url || this._options.url, {
+					method: method || this._options.method,
+					headers: {
+						"Content-Type": "application/json",
+						"Accept": "application/json",
+						...this._options.headers,
+						...headers
+					},
+					body: data,
+					credentials: credentials || this._options.credentials
+				})
+				result = await resp.json()
+			} catch (e) {
+				result.error = e
+			}
+			if (result.error)
+				throw new GraphError(result.error.code || 400)
+			return result.data
 		}
-		if (result.error)
-			throw new GraphError(result.error.code || 500) 
-		return result.data
+		return await this.request(data, url, method, credentials, headers)
+	}
+
+	static request(data, url, method, credentials, headers) {
+		const opt = {
+			hostname: url,
+			port: this._options.port || 80,
+			path: this._options.path || '/',
+			method: method,
+			headers: {
+				'Content-Type': 'application/json',
+				"Accept": "application/json",
+				'Content-Length': data.length,
+				...headers || {}
+			}
+		}
+		return new Promise((resolve, reject) => {
+			const req = http.request(opt, (res) => {
+				let result = ""
+				res.setEncoding('utf8');
+				res.on('data', chunk => result += chunk);
+				res.on('end', () => {
+					let rs
+					try {
+						rs = JSON.parse(result)
+					} catch (error) {
+						return reject(error)
+					}
+					resolve(rs.data)
+				});
+				res.on("error", (e) => {
+					console.logs(r.message)
+				})
+			});
+			req.on('error', (e) => {
+				reject(e)
+			});
+			req.write(data);
+			req.end();
+		})
 	}
 }
 
@@ -307,6 +362,8 @@ export default class GraphQLClient {
 
 	static BuildArg(arg) {
 		let str = ''
+		if (arg === null)
+			arg = undefined
 		switch (typeof arg) {
 			case "object":
 				if (Array.isArray(arg)) {
@@ -333,6 +390,9 @@ export default class GraphQLClient {
 			case "number":
 				str += arg
 				break
+			case "undefined":
+				str += 'null'
+				break
 			default:
 				str += JSON.stringify(arg)
 				break
@@ -346,9 +406,7 @@ export default class GraphQLClient {
 		for (let i = 0; i < keys.length; i++) {
 			const k = keys[i]
 			const v = args[k]
-			if (v !== null && v !== undefined) {
-				result += `${k}:${GraphQLClient.BuildArg(v)},`
-			}
+			result += `${k}:${GraphQLClient.BuildArg(v)},`
 		}
 		return result.slice(0, -1) + " ) "
 	}
@@ -359,24 +417,67 @@ export default class GraphQLClient {
 	 * @param {Object} optional
 	 */
 	static async Send(data, { url, method, credentials, headers }) {
-		let result = {}
-		try {
-			const resp = await fetch(url || _gqlcOpt.url, {
-				method: method || _gqlcOpt.method,
-				headers: Object.assign({
-					"Content-Type": "application/json",
-					"Accept": "application/json"
-				}, headers || _gqlcOpt.headers),
-				body: data,
-				credentials: credentials || _gqlcOpt.credentials
-			})
-			result = await resp.json()
-		} catch (e) {
-			throw e
+		if (_gqlcOpt.fetch) {
+			let result = {}
+			try {
+				const resp = await fetch(url || _gqlcOpt.url, {
+					method: method || _gqlcOpt.method,
+					headers: Object.assign({
+						"Content-Type": "application/json",
+						"Accept": "application/json"
+					}, headers || _gqlcOpt.headers),
+					body: data,
+					credentials: credentials || _gqlcOpt.credentials
+				})
+				result = await resp.json()
+			} catch (e) {
+				throw e
+			}
+			if (result.error)
+				throw new GraphError(result.error)
+			return result.data
 		}
-		if (result.error)
-			throw new GraphError(result.error)
-		return result.data
+		return await GraphQLClient.Request(data, { url, method, credentials, headers })
+
+	}
+
+	static Request(data, { url, method, credentials, headers }) {
+		const opt = {
+			hostname: url,
+			port: _gqlcOpt.port || 80,
+			path: _gqlcOpt.path || '/',
+			method: method,
+			headers: {
+				'Content-Type': 'application/json',
+				"Accept": "application/json",
+				'Content-Length': data.length,
+				...headers || {}
+			}
+		}
+		return new Promise((resolve, reject) => {
+			const req = http.request(opt, (res) => {
+				let result = ""
+				res.setEncoding('utf8');
+				res.on('data', chunk => result += chunk);
+				res.on('end', () => {
+					let rs
+					try {
+						rs = JSON.parse(result)
+					} catch (error) {
+						return reject(error)
+					}
+					resolve(rs.data)
+				});
+				res.on("error", (e) => {
+					console.logs(r.message)
+				})
+			});
+			req.on('error', (e) => {
+				reject(e)
+			});
+			req.write(data);
+			req.end();
+		})
 	}
 }
 
