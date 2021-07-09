@@ -1,5 +1,8 @@
  /* eslint-disable */
-const _gqlcOpt = {
+
+ import GraphError from "./grapherror.js"
+
+ const _gqlcOpt = {
 	"method": "post",
 	"credentials": "include",
 	"headers": {},
@@ -478,13 +481,5 @@ export default class GraphQLClient {
 			req.write(data);
 			req.end();
 		})
-	}
-}
-
-class GraphError extends Error {
-	constructor(obj) {
-		super(obj.message)
-		this.code = obj.code
-		this.data = obj.data
 	}
 }
