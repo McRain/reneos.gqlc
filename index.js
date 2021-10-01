@@ -34,6 +34,11 @@ class GraphQLClient {
 		})
 	}
 
+/**
+ * 
+ * @param {*} config 
+ * @returns 
+ */
 	static Init(config) {
 		GraphQLClient.Send = GraphQLClient.Run.bind(null, config)
 		return GraphQLClient

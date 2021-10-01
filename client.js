@@ -163,9 +163,7 @@ class Client {
 			throw e
 		}
 	}
-	async send() {
-
-	}
+	async send() {}
 }
 
 export default Client
