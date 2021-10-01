@@ -8,7 +8,7 @@ class Client {
 			"port": 80,
 			...config
 		}
-		this.send  = this.run.bind(null,options)
+		this.send = this.run.bind(null, options)
 		this._stored = {}
 	}
 	add(obj) {
@@ -37,6 +37,10 @@ class Client {
 	write(value, data) {
 		const t = typeof value === "string" ? this._stored[value] : value
 		return this.do('mutation', this.parseTemplate(t, data))
+	}
+	subs(value, data) {
+		const t = typeof value === "string" ? this._stored[value] : value
+		return this.do('subscription', this.parseTemplate(t, data))
 	}
 	async do(op, q) {
 		const query = this.build(op, q)
@@ -140,7 +144,7 @@ class Client {
 		}
 		return result.slice(0, -1) + " ) "
 	}
-	async run(options,data){
+	async run(options, data) {
 		try {
 			const resp = await fetch(options.url, {
 				...options,
@@ -151,82 +155,17 @@ class Client {
 				},
 				body: data
 			})
-			const {data:value,error} = await resp.json()
-			if(error)
-				throw new GraphError(error) 
+			const { data: value, error } = await resp.json()
+			if (error)
+				throw new GraphError(error)
 			return value
 		} catch (e) {
 			throw e
 		}
 	}
-	async send(){
-		throw new Error(`GQLC.Client.Send - Override Send`)
+	async send() {
+
 	}
-
-	/*async send(data, url, method, credentials, headers) {
-		if (this._options.fetch) {
-			let result = {}
-			try {
-				const resp = await fetch(url || this._options.url, {
-					method: method || this._options.method,
-					headers: {
-						"Content-Type": "application/json",
-						"Accept": "application/json",
-						...this._options.headers,
-						...headers
-					},
-					body: data,
-					credentials: credentials || this._options.credentials
-				})
-				result = await resp.json()
-			} catch (e) {
-				result.error = e
-			}
-			if (result.error)
-				throw new GraphError(result.error.code || 400)
-			return result.data
-		}
-		return await this.request(data, url, method, credentials, headers)
-	}*/
-
-	/*static request(data, url, method, credentials, headers) {
-		const opt = {
-			hostname: url,
-			port: this._options.port || 80,
-			path: this._options.path || '/',
-			method: method,
-			headers: {
-				'Content-Type': 'application/json',
-				"Accept": "application/json",
-				'Content-Length': data.length,
-				...headers || {}
-			}
-		}
-		return new Promise((resolve, reject) => {
-			const req = http.request(opt, (res) => {
-				let result = ""
-				res.setEncoding('utf8');
-				res.on('data', chunk => result += chunk);
-				res.on('end', () => {
-					let rs
-					try {
-						rs = JSON.parse(result)
-					} catch (error) {
-						return reject(error)
-					}
-					resolve(rs.data)
-				});
-				res.on("error", (e) => {
-					console.logs(r.message)
-				})
-			});
-			req.on('error', (e) => {
-				reject(e)
-			});
-			req.write(data);
-			req.end();
-		})
-	}*/
 }
 
 export default Client

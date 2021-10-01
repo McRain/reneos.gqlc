@@ -3,12 +3,6 @@ import Client from "./client.js"
 
 const _stored = {}
 
-let _eventHandlers = {
-	error: null,
-	send: null,
-	recive: null
-}
-
 class GraphQLClient {
 
 	static get GraphError() {
@@ -17,19 +11,6 @@ class GraphQLClient {
 
 	static get Client() {
 		return Client
-	}
-
-	/**
-	 * 
-	 * @param {*} event (error,send,recive)
-	 * @param {*} handler 
-	 */
-	static On(event, handler) {
-		_eventHandlers[event] = handler
-	}
-
-	static Off(event) {
-		_eventHandlers[event] = null
 	}
 
 	/**
@@ -95,7 +76,7 @@ class GraphQLClient {
 	 */
 	static Sub(value, data) {
 		const t = typeof value === "string" ? _stored[value] : value
-		return GraphQLClient.Do('subscript', GraphQLClient.ParseTemplate(t, data))
+		return GraphQLClient.Do('subscription', GraphQLClient.ParseTemplate(t, data))
 	}
 
 	/**
@@ -106,15 +87,9 @@ class GraphQLClient {
 	static async Do(op, q) {
 		const query = GraphQLClient.Build(op, q)
 		try {
-			if (_eventHandlers.send)
-				_eventHandlers.send(op)
 			const result = await GraphQLClient.Send(JSON.stringify({ query }))
-			if (_eventHandlers.recive)
-				_eventHandlers.recive(result)
 			return result
 		} catch (error) {
-			if (_eventHandlers.error)
-				_eventHandlers.error(error.code ? error : { error: { code: 400 } })
 			if (!error.code)
 				return { error: { code: 400 } } //no serverside error
 			return { error }
