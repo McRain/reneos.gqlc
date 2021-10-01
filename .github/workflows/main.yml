@@ -26,6 +26,6 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPMTOKEN }}
 
       - name: Publish
-        run: @reneos/gqlc publish from-package --yes
+        run: reneos.gqlc publish from-package --yes
         env:
           NPM_TOKEN: ${{ secrets.NPMTOKEN }}
