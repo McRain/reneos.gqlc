@@ -1,0 +1,31 @@
+name: autodeploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  default:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: Install Packages
+        run: npm install
+
+      - name: Authenticate
+        run: |
+          echo "@grandcore:registry=http://registry.npmjs.org/" > .npmrc
+          echo "registry=http://registry.npmjs.org/" >> .npmrc
+          echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> .npmrc
+          npm whoami
+        env:
+          NPM_TOKEN: ${{ secrets.NPMTOKEN }}
+
+      - name: Publish
+        run: @reneos/gqlc publish from-package --yes
+        env:
+          NPM_TOKEN: ${{ secrets.NPMTOKEN }}
