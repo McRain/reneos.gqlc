@@ -92,11 +92,11 @@ class GraphQLClient {
 	static async Do(op, q) {
 		const query = GraphQLClient.Build(op, q)
 		try {
-			const result = await GraphQLClient.Send(JSON.stringify({ query }))
+			const result = await GraphQLClient.Send({ query }) //GraphQLClient.Send(JSON.stringify({ query }))
 			return result
 		} catch (error) {
 			if (!error.code)
-				return { error: { code: 400 } } //no serverside error
+				return { error: { code: 400,message:error.message } } //no serverside error
 			return { error }
 		}
 	}
@@ -202,7 +202,8 @@ class GraphQLClient {
 	 * @param {*} data 
 	 * @returns 
 	 */
-	static async Run(options, data) {
+	static async Run(options, d) {
+		const data = JSON.stringify(d)
 		try {
 			const resp = await fetch(options.url, {
 				...options,
