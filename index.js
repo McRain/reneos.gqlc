@@ -5,13 +5,8 @@ const _stored = {}
 
 class GraphQLClient {
 
-	static get GraphError() {
-		return GraphError
-	}
-
-	static get Client() {
-		return Client
-	}
+	static GraphError = GraphError;
+	static Client = Client;
 
 	/**
 	 * Save to stored templates
@@ -21,6 +16,10 @@ class GraphQLClient {
 		Object.keys(obj).forEach(k => {
 			_stored[k] = obj[k]
 		})
+	}
+
+	static Read(key) {
+		return _stored[key]
 	}
 
 	/**
@@ -34,30 +33,33 @@ class GraphQLClient {
 		})
 	}
 
-/**
- * 
- * @param {*} config 
- * @returns 
- */
+	/**
+	 * 
+	 * @param {*} config 
+	 * {
+	 * 	url:"",
+	 * 	headers:{}
+	 * ...options for fetch
+	 * }
+	 * @returns 
+	 */
 	static Init(config) {
 		GraphQLClient.Send = GraphQLClient.Run.bind(null, config)
 		return GraphQLClient
 	}
 
 	static ParseTemplate(template, data) {
-		let q = template
-		if (data)
-			q = JSON.parse(JSON.stringify(template, (k, v) => {
-				if (data.hasOwnProperty(v))
+		return data ?
+			JSON.parse(JSON.stringify(template, (k, v) => {
+				if (data != null && Object.prototype.hasOwnProperty.call(data, v))
 					return data[v]
 				return v
-			}))
-		return q
+			})) : template
 	}
 
-	/**	 
-	 * @param {Object | String} str 
-	 * @param {Object} data 
+	/**
+	 * @param {Object | String} value - Query template or stored template key
+	 * @param {Object} data - Template substitution data
 	 */
 	static Get(value, data) {
 		const t = typeof value === "string" ? _stored[value] : value
@@ -65,9 +67,8 @@ class GraphQLClient {
 	}
 
 	/**
-	 * 
-	 * @param {Object | String} str 
-	 * @param {Object} data 
+	 * @param {Object | String} value - Mutation template or stored template key
+	 * @param {Object} data - Template substitution data
 	 */
 	static Set(value, data) {
 		const t = typeof value === "string" ? _stored[value] : value
@@ -75,9 +76,8 @@ class GraphQLClient {
 	}
 
 	/**
-	 * 
-	 * @param {Object | String} str 
-	 * @param {Object} data 
+	 * @param {Object | String} value - Subscription template or stored template key
+	 * @param {Object} data - Template substitution data
 	 */
 	static Sub(value, data) {
 		const t = typeof value === "string" ? _stored[value] : value
@@ -96,7 +96,7 @@ class GraphQLClient {
 			return result
 		} catch (error) {
 			if (!error.code)
-				return { error: { code: 400,message:error.message } } //no serverside error
+				return { error: { code: 400, message: error.message } } //no serverside error
 			return { error }
 		}
 	}
@@ -105,32 +105,31 @@ class GraphQLClient {
 		let result = `${op} { `
 		for (let i = 0; i < args.length; i++)
 			result += GraphQLClient.BuildObject(args[i])
-		return result + " }"
+		return result + "}"
 	}
+
+	
 	static BuildObject(obj) {
 		let result = ``
 		if (obj === null || obj === undefined) return result
 		if (typeof (obj) === "string" ||
 			typeof (obj) === "number" ||
-			Array.isArray(obj))
+			Array.isArray(obj)) {
 			return JSON.stringify(obj)
-		Object.keys(obj).forEach((k) => {
+		}
+		const keys = Object.keys(obj)
+		for (let i = 0; i < keys.length; i++) {
+			const k = keys[i]
 			result += k + " "
-			const values = obj[k]
-			const arg = values.find((element, index, array) => {
-				if (!element || !element.$args/* || typeof element !== "object"*/)
-					return false
-				return true
-			})
-			let acount = 0
-			if (arg) {
-				result += GraphQLClient.BuildArgs(arg.$args)
-				const ind = values.indexOf(arg)
-				values.splice(ind, 1)
+			const values = [...obj[k]]
+			const argIndex = values.findIndex((element) => element && element.$args)
+			if (argIndex !== -1) {
+				result += GraphQLClient.BuildArgs(values[argIndex].$args)
+				values.splice(argIndex, 1)
 			}
-			result += values.length > acount ? " { " : ""
-			for (let i = 0; i < values.length; i++) {
-				const o = values[i]
+			result += values.length > 0 ? " { " : ""
+			for (let j = 0; j < values.length; j++) {
+				const o = values[j]
 				if (!o)
 					continue
 				if (typeof (o) === "string") {
@@ -140,8 +139,8 @@ class GraphQLClient {
 				} else
 					result += GraphQLClient.BuildObject(o)
 			}
-			result += values.length > acount ? " } " : ""
-		})
+			result += values.length > 0 ? " } " : ""
+		}
 		return result
 	}
 
@@ -175,6 +174,9 @@ class GraphQLClient {
 			case "number":
 				str += arg
 				break
+			case "boolean":
+				str += arg
+				break
 			case "undefined":
 				str += 'null'
 				break
@@ -204,23 +206,19 @@ class GraphQLClient {
 	 */
 	static async Run(options, d) {
 		const data = JSON.stringify(d)
-		try {
-			const resp = await fetch(options.url, {
-				...options,
-				headers: {
-					"Content-Type": "application/json",
-					"Accept": "application/json",
-					...options.headers
-				},
-				body: data
-			})
-			const { data: value, error } = await resp.json()
-			if (error)
-				throw new GraphError(error)
-			return value
-		} catch (e) {
-			throw e
-		}
+		const resp = await fetch(options.url, {
+			...options,
+			headers: {
+				"Content-Type": "application/json",
+				"Accept": "application/json",
+				...options.headers
+			},
+			body: data
+		})
+		const { data: value, error } = await resp.json()
+		if (error)
+			throw new GraphError(error)
+		return value
 	}
 
 	/**

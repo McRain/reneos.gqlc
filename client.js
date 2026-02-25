@@ -1,3 +1,5 @@
+import GraphError from "./grapherror.js"
+
 class Client {
 	constructor(config) {
 		const options = {
@@ -25,7 +27,7 @@ class Client {
 	}
 	parseTemplate(template, data) {
 		return data ? JSON.parse(JSON.stringify(template, (k, v) => {
-			if (v in data)
+			if (data != null && Object.prototype.hasOwnProperty.call(data, v))
 				return data[v]
 			return v
 		})) : template
@@ -48,7 +50,7 @@ class Client {
 			return await this.send(JSON.stringify({ query }))
 		} catch (error) {
 			if (!error.code)
-				return { error: { code: 500 } } //no serverside error
+				return { error: { code: 500, message: error.message } } //no serverside error
 			return { error }
 		}
 	}
@@ -67,19 +69,13 @@ class Client {
 			return JSON.stringify(obj)
 		Object.keys(obj).forEach((k) => {
 			result += k + " "
-			const values = obj[k]
-			const arg = values.find((element) => {
-				if (!element || !element.$args)
-					return false
-				return true
-			})
-			let acount = 0
-			if (arg) {
-				result += this.buildargs(arg.$args)
-				const ind = values.indexOf(arg)
-				values.splice(ind, 1)
+			const values = [...obj[k]]
+			const argIndex = values.findIndex((element) => element && element.$args)
+			if (argIndex !== -1) {
+				result += this.buildargs(values[argIndex].$args)
+				values.splice(argIndex, 1)
 			}
-			result += values.length > acount ? " { " : ""
+			result += values.length > 0 ? " { " : ""
 			for (let i = 0; i < values.length; i++) {
 				const o = values[i]
 				if (!o)
@@ -91,7 +87,7 @@ class Client {
 				} else
 					result += this.buildobject(o)
 			}
-			result += values.length > acount ? " } " : ""
+			result += values.length > 0 ? " } " : ""
 		})
 		return result
 	}
@@ -125,6 +121,9 @@ class Client {
 			case "number":
 				str += arg
 				break
+			case "boolean":
+				str += arg
+				break
 			case "undefined":
 				str += 'null'
 				break
@@ -145,25 +144,20 @@ class Client {
 		return result.slice(0, -1) + " ) "
 	}
 	async run(options, data) {
-		try {
-			const resp = await fetch(options.url, {
-				...options,
-				headers: {
-					"Content-Type": "application/json",
-					"Accept": "application/json",
-					...options.headers
-				},
-				body: data
-			})
-			const { data: value, error } = await resp.json()
-			if (error)
-				throw new GraphError(error)
-			return value
-		} catch (e) {
-			throw e
-		}
+		const resp = await fetch(options.url, {
+			...options,
+			headers: {
+				"Content-Type": "application/json",
+				"Accept": "application/json",
+				...options.headers
+			},
+			body: data
+		})
+		const { data: value, error } = await resp.json()
+		if (error)
+			throw new GraphError(error)
+		return value
 	}
-	async send() {}
 }
 
 export default Client
